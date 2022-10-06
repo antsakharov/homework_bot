@@ -34,7 +34,7 @@ HOMEWORK_STATUSES = {
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-fileHandler = logging.FileHandler('homework.log',encoding='UTF-8')
+fileHandler = logging.FileHandler('homework.log', encoding='UTF-8')
 fileHandler.setFormatter(formatter)
 logger.addHandler(fileHandler)
 streamHandler = logging.StreamHandler(sys.stdout)
