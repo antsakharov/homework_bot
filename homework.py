@@ -20,7 +20,8 @@ PRACTICUM_TOKEN = os.getenv('YA_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TG_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TG_CHAT_ID')
 
-RETRY_TIME = 600
+TOKENS = [PRACTICUM_TOKEN,TELEGRAM_TOKEN,TELEGRAM_CHAT_ID]
+RETRY_TIME = 60
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -55,7 +56,7 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """Функция отправляет запрос к API."""
-    timestamp = current_timestamp or int(time.time())
+    timestamp = current_timestamp
     params = {'from_date': timestamp}
     try:
         homework_statuses = requests.get(
@@ -63,7 +64,7 @@ def get_api_answer(current_timestamp):
             headers=HEADERS,
             params=params
         )
-    except requests.exceptions.RequestException as error:
+    except Exception as error:
         message = f'Запрос к API не отправлен: {error}'
         logger.error(message)
         raise exceptions.RequestError(message)
@@ -81,9 +82,8 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяет ответ API на корректность."""
-    try:
-        homeworks = response['homeworks']
-    except KeyError:
+    homeworks = response['homeworks']
+    if not isinstance(response, dict):
         message = 'Отсутсвует ключ homeworks'
         logger.error(message)
         raise KeyError(message)
@@ -91,14 +91,19 @@ def check_response(response):
         message = 'Перечень не является списком'
         logger.error(message)
         raise exceptions.HomeWorkIsNotList(message)
-    if len(homeworks) == 0:
+    if len(homeworks) == 0: 
         message = 'Вы ничего не отправляли на ревью'
         logger.error(message)
+        raise ValueError(message)
     return homeworks
 
 
 def parse_status(homework):
     """Функция извлекает статус домашней работы."""
+    if not isinstance(homework, dict):
+        message = 'Перечень не является словарем'
+        logger.error(message)
+        raise exceptions.HomeWorkIsNotDict(message)
     if 'homework_name' not in homework:
         message = 'Нет ключа homework_name в API'
         logger.error(message)
@@ -117,39 +122,43 @@ def parse_status(homework):
 
 def check_tokens():
     """Функция проверки доступности переменных окружения."""
-    if (
-        PRACTICUM_TOKEN is None
-        or TELEGRAM_TOKEN is None
-        or TELEGRAM_CHAT_ID is None
+    if ( 
+        PRACTICUM_TOKEN is None 
+        or TELEGRAM_TOKEN is None 
+        or TELEGRAM_CHAT_ID is None    
     ):
-        logger.critical('Токены отсутствуют')
         return False
     return True
-
+        
 
 def main():
     """Основная логика работы бота."""
-    if not check_tokens():
-        raise KeyError('Отсутствуют обязательные переменные окружения')
+    if check_tokens():
+        logger.critical('Токены отсутствуют')
+        raise NameError('Отсутствуют обязательные переменные окружения')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
     last_homework = 0
+    errors = True
     while True:
         try:
             response = get_api_answer(current_timestamp)
-            print(response)
+            logger.info(response)
             homework = check_response(response)
-            print(homework)
+            logger.info(homework)
             if homework != last_homework:
                 last_homework = homework
                 message = parse_status(homework[0])
                 send_message(bot, message)
             current_timestamp = response.get('current_date')
-            print(message)
+            logger.info(message)
             time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            send_message(bot, message)
+            if errors:
+                errors = False
+                send_message(bot, message)
+            logger.critical(message)
             time.sleep(RETRY_TIME)
 
 

@@ -10,6 +10,8 @@ class NegativeApiStatus(Exception):
 class HomeWorkIsNotList(Exception):
     pass
 
+class HomeWorkIsNotDict(Exception):
+    pass
 
 class HomerWorkNameError(Exception):
     pass
