@@ -91,7 +91,7 @@ def check_response(response):
         message = 'Перечень не является списком'
         logger.error(message)
         raise exceptions.HomeWorkIsNotList(message)
-    if len(homeworks) == 0: 
+    if len(homeworks) == 0:
         message = 'Вы ничего не отправляли на ревью'
         logger.error(message)
         raise ValueError(message)
@@ -122,10 +122,10 @@ def parse_status(homework):
 
 def check_tokens():
     """Функция проверки доступности переменных окружения."""
-    if ( 
-        PRACTICUM_TOKEN is None 
-        or TELEGRAM_TOKEN is None 
-        or TELEGRAM_CHAT_ID is None    
+    if (
+        PRACTICUM_TOKEN is None
+        or TELEGRAM_TOKEN is None
+        or TELEGRAM_CHAT_ID is None
     ):
         return False
     return True
