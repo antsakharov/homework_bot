@@ -91,7 +91,7 @@ def check_response(response):
         message = 'Перечень не является списком'
         logger.error(message)
         raise exceptions.HomeWorkIsNotList(message)
-    if len(homeworks) == 0:
+    if not homeworks:
         message = 'Вы ничего не отправляли на ревью'
         logger.error(message)
         raise ValueError(message)
