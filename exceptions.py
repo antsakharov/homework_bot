@@ -13,7 +13,7 @@ class HomeWorkIsNotList(Exception):
 class HomeWorkIsNotDict(Exception):
     pass
 
-class HomerWorkNameError(Exception):
+class HomeWorkNameError(Exception):
     pass
 
 

@@ -82,11 +82,15 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """Проверяет ответ API на корректность."""
-    homeworks = response['homeworks']
     if not isinstance(response, dict):
-        message = 'Отсутсвует ключ homeworks'
+        message = 'Response не является словарем'
+        logger.error(message)
+        raise TypeError(message)
+    if "homeworks" not in response:
+        message = 'Ключ homeworks не в response'
         logger.error(message)
         raise KeyError(message)
+    homeworks = response['homeworks']
     if not isinstance(homeworks, list):
         message = 'Перечень не является списком'
         logger.error(message)
@@ -122,13 +126,7 @@ def parse_status(homework):
 
 def check_tokens():
     """Функция проверки доступности переменных окружения."""
-    if (
-        PRACTICUM_TOKEN is None
-        or TELEGRAM_TOKEN is None
-        or TELEGRAM_CHAT_ID is None
-    ):
-        return False
-    return True
+    return all([PRACTICUM_TOKEN,TELEGRAM_TOKEN,TELEGRAM_CHAT_ID])
 
 
 def main():
@@ -138,8 +136,8 @@ def main():
         raise NameError('Отсутствуют обязательные переменные окружения')
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
-    last_homework = 0
-    errors = True
+    last_homework = ''
+    flag = True
     while True:
         try:
             response = get_api_answer(current_timestamp)
@@ -147,18 +145,23 @@ def main():
             homework = check_response(response)
             logger.info(homework)
             if homework != last_homework:
-                last_homework = homework
-                message = parse_status(homework[0])
-                send_message(bot, message)
+                if homework != 0:
+                    last_homework = homework
+                    message = parse_status(homework[0])
+                    send_message(bot, message)
+                else:
+                    message = 'Передан пустой список homework'
+                    logger.error(message)
+                    raise ValueError(message)
             current_timestamp = response.get('current_date')
             logger.info(message)
-            time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            if errors:
-                errors = False
+            if flag:
+                flag = False
                 send_message(bot, message)
             logger.critical(message)
+        finally:
             time.sleep(RETRY_TIME)
 
 
