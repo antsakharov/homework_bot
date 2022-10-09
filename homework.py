@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import logging
+import copy
 from http import HTTPStatus
 
 import requests
@@ -137,7 +138,7 @@ def main():
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
     last_homework = ''
-    flag = True
+    last_message = ''
     while True:
         try:
             response = get_api_answer(current_timestamp)
@@ -145,10 +146,12 @@ def main():
             homework = check_response(response)
             logger.info(homework)
             if homework != last_homework:
-                if homework != 0:
+                if len(homework) > 0:
                     last_homework = homework
                     message = parse_status(homework[0])
-                    send_message(bot, message)
+                    if last_message != message:
+                        send_message(bot, message)
+                        last_message = copy.copy(message)
                 else:
                     message = 'Передан пустой список homework'
                     logger.error(message)
@@ -157,9 +160,9 @@ def main():
             logger.info(message)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            if flag:
-                flag = False
+            if last_message != message:
                 send_message(bot, message)
+                last_message = copy.copy(message)
             logger.critical(message)
         finally:
             time.sleep(RETRY_TIME)
